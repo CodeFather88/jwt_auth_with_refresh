@@ -6,10 +6,13 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { options } from './config';
 import { GUARDS } from './guards';
+import { TokenModule } from 'src/token/token.module';
 
 @Module({
     controllers: [AuthController],
-    providers: [AuthService],
-    imports: [PassportModule, JwtModule.registerAsync(options()), UserModule]
+    providers: [
+        AuthService,
+    ],
+    imports: [PassportModule, UserModule, TokenModule]
 })
 export class AuthModule { }

@@ -7,13 +7,14 @@ import { ConfigService } from '@nestjs/config';
 import { Cookie, Public, UserAgent } from '@shared/decorators';
 import { LoginDto, RegisterDto } from './dto';
 import { Role } from '@shared/enums';
+import { TokenService } from 'src/token/token.service';
 
 const REFRESH_TOKEN = 'refreshtoken'
 @ApiTags('Authorization')
 @Public()
 @Controller('auth')
 export class AuthController {
-    constructor(private readonly authService: AuthService, private readonly configService: ConfigService) { }
+    constructor(private readonly authService: AuthService, private readonly configService: ConfigService, private readonly tokenService: TokenService) { }
 
     @ApiOperation({ summary: 'login' })
     @Post('login')
@@ -39,7 +40,7 @@ export class AuthController {
         if (!refreshToken) {
             throw new UnauthorizedException('Refresh token is required');
         }
-        const tokens = await this.authService.refreshTokens(refreshToken, agent);
+        const tokens = await this.tokenService.refreshTokens(refreshToken, agent);
         if (!tokens) {
             throw new UnauthorizedException('Invalid refresh token');
         }

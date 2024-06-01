@@ -7,6 +7,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule)
   app.use(cookieParser())
   const config = new DocumentBuilder()
+    .addBearerAuth()
     .setTitle('Social network app')
     .setDescription('Документация REST API')
     .setVersion('1.0.0')
