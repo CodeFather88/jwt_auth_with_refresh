@@ -36,6 +36,11 @@ export class UserService {
     return { status: 'ok' }
   }
 
+  async findAll(): Promise<User[]> {
+    const users = await this.prismaService.user.findMany()
+    return users;
+  }
+
   private async hashPassword(password: string): Promise<string> {
     const salt = await genSalt(10)
     return await hash(password, salt)
