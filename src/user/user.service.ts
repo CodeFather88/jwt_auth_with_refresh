@@ -2,12 +2,13 @@ import { Injectable } from '@nestjs/common'
 import { User } from '@prisma/client'
 import { PrismaService } from '@prisma/prisma.service'
 import { genSalt, hash } from 'bcrypt'
+import { CreateUserDto } from './dto/createUser.dto'
 
 @Injectable()
 export class UserService {
   constructor(private readonly prismaService: PrismaService) { }
 
-  async create(user: Partial<User>) {
+  async create(user: CreateUserDto) {
     const hashedPassword = await this.hashPassword(user.password)
     const newUser = await this.prismaService.user.create({
       data: {
@@ -15,20 +16,13 @@ export class UserService {
         password: hashedPassword,
         roles: ['USER'],
       },
+      select: {
+        id: true,
+        email: true,
+        roles: true
+      }
     })
     return { status: 'ok', newUser }
-  }
-
-  async findOne(idOrEmail: string): Promise<User> {
-    const user = await this.prismaService.user.findFirst({
-      where: {
-        OR: [
-          { id: idOrEmail },
-          { email: idOrEmail }
-        ],
-      },
-    });
-    return user;
   }
 
   async delete(id: string) {
@@ -36,9 +30,25 @@ export class UserService {
     return { status: 'ok' }
   }
 
-  async findAll(): Promise<User[]> {
-    const users = await this.prismaService.user.findMany()
-    return users;
+  async list({ take, skip }) {
+    const list = await this.prismaService.user.findMany({
+      take,
+      skip
+    })
+    return { list };
+  }
+
+  async get(id: string) {
+    return this.prismaService.user.findUnique({
+      where: {
+        id
+      },
+      select: {
+        email: true,
+        id: true,
+        roles: true,
+      }
+    })
   }
 
   private async hashPassword(password: string): Promise<string> {

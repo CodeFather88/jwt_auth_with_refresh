@@ -6,12 +6,13 @@ import { PrismaService } from '@prisma/prisma.service';
 import { UserService } from '@user/user.service';
 import { add } from 'date-fns';
 import { v4 } from 'uuid';
+import { GenerateTokensDto } from './dto/generate-tokens.dto';
 
 @Injectable()
 export class TokenService {
     constructor(private readonly prismaService: PrismaService, private readonly jwtService: JwtService, private readonly userService: UserService) { }
 
-    async generateTokens(user: User, agent: string): Promise<Tokens> {
+    async generateTokens({ user, agent }: GenerateTokensDto) {
         const accessToken = this.jwtService.sign({ id: user.id, roles: user.roles })
         const refreshToken = await this.getRefreshToken(user.id, agent)
         return { accessToken, refreshToken }
@@ -40,10 +41,10 @@ export class TokenService {
         if (!token || new Date(token.exp) < new Date()) {
             throw new UnauthorizedException('Refresh token is invalid or expired')
         }
-        const user = await this.userService.findOne(token.userId)
+        const user = await this.userService.get(token.userId)
         if (!user) {
             throw new UnauthorizedException('User not found');
         }
-        return await this.generateTokens(user, agent)
+        return this.generateTokens({ user, agent })
     }
 }

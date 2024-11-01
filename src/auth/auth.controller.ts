@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Res, HttpStatus, UnauthorizedException } from '@nestjs/common';
+import { Controller, Post, Body, Get, Res, HttpStatus, UnauthorizedException, Header, Req } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Response } from 'express';
@@ -8,6 +8,7 @@ import { Cookie, Public, UserAgent } from '@shared/decorators';
 import { LoginDto, RegisterDto } from './dto';
 import { Role } from '@shared/enums';
 import { TokenService } from 'src/token/token.service';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
 
 const REFRESH_TOKEN = 'refreshtoken'
 @ApiTags('Authorization')
@@ -24,19 +25,18 @@ export class AuthController {
         if (!tokens) {
             return null
         }
-        await this.setRefreshTokenToCookies(tokens, res)
-        res.status(HttpStatus.OK).json({ accessToken: tokens.accessToken })
+        res.status(HttpStatus.OK).json({ accessToken: tokens.accessToken, refreshToken: tokens.refreshToken.token })
     }
 
     @ApiOperation({ summary: 'register' })
     @Post('register')
     async register(@Body() dto: RegisterDto) {
-        return await this.authService.register(dto)
+        return this.authService.register(dto)
     }
 
     @ApiOperation({ summary: 'refresh-tokens' })
-    @Get('refresh-tokens')
-    async refreshTokens(@Cookie(REFRESH_TOKEN) refreshToken: string, @Res() res: Response, @UserAgent() agent: string) {
+    @Post('refresh-tokens')
+    async refreshTokens(@Body() { refreshToken }: RefreshTokenDto, @Res() res: Response, @UserAgent() agent: string) {
         if (!refreshToken) {
             throw new UnauthorizedException('Refresh token is required');
         }
@@ -44,21 +44,6 @@ export class AuthController {
         if (!tokens) {
             throw new UnauthorizedException('Invalid refresh token');
         }
-        await this.setRefreshTokenToCookies(tokens, res);
-        res.status(HttpStatus.OK).json({ accessToken: tokens.accessToken });
-    }
-
-
-    private async setRefreshTokenToCookies(tokens: Tokens, res: Response) {
-        if (!tokens) {
-            throw new UnauthorizedException()
-        }
-        res.cookie(REFRESH_TOKEN, tokens.refreshToken.token, {
-            httpOnly: true,
-            sameSite: 'lax',
-            expires: new Date(tokens.refreshToken.exp),
-            secure: this.configService.get('NODE_ENV', 'development') === 'production',
-            path: '/'
-        })
+        res.status(HttpStatus.OK).json({ accessToken: tokens.accessToken, refreshToken: tokens.refreshToken.token });
     }
 }
